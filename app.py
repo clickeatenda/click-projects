@@ -232,7 +232,7 @@ def get_notion_data():
 
     return pd.DataFrame(rows)
 
-def project_card(name, total, aberto, em_prog, concl):
+def project_card(name, total, aberto, em_prog, concl, alta, urgente):
     return f"""
     <div class="project-card">
         <div class="header">
@@ -243,6 +243,8 @@ def project_card(name, total, aberto, em_prog, concl):
             <span>🟡 {aberto}</span>
             <span>🔵 {em_prog}</span>
             <span>🟢 {concl}</span>
+            <span>🟠 {alta}</span>
+            <span>🔴 {urgente}</span>
         </div>
     </div>
     """
@@ -425,13 +427,15 @@ with col_left:
             'Total': len(subset),
             'Aberto': len(subset[subset['Status'].str.contains('Aberto', case=False, na=False)]),
             'EmAndamento': len(subset[subset['Status'].str.contains('andamento', case=False, na=False)]),
-            'Concluido': len(subset[subset['Status'].str.contains('Conclu', case=False, na=False)])
+            'Concluido': len(subset[subset['Status'].str.contains('Conclu', case=False, na=False)]),
+            'Alta': len(subset[subset['Prioridade'].str.contains('Alta', case=False, na=False)]),
+            'Urgente': len(subset[subset['Prioridade'].str.contains('Urgente', case=False, na=False)])
         })
     
     cols = st.columns(2)
     for idx, ps in enumerate(proj_stats):
         with cols[idx % 2]:
-            st.markdown(project_card(ps['Projeto'], ps['Total'], ps['Aberto'], ps['EmAndamento'], ps['Concluido']), unsafe_allow_html=True)
+            st.markdown(project_card(ps['Projeto'], ps['Total'], ps['Aberto'], ps['EmAndamento'], ps['Concluido'], ps['Alta'], ps['Urgente']), unsafe_allow_html=True)
 
 with col_right:
     # === ISSUES FECHADAS RECENTEMENTE ===
@@ -452,8 +456,11 @@ with col_right:
 # === TABELA COMPLETA ===
 st.markdown('<p class="section-title">📋 Todas as Issues</p>', unsafe_allow_html=True)
 
+# Ordenar por data de atualização (mais recentes primeiro)
+df_sorted = df.sort_values('Atualizado', ascending=False)
+
 st.dataframe(
-    df,
+    df_sorted,
     use_container_width=True,
     hide_index=True,
     column_config={
