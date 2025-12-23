@@ -73,28 +73,38 @@ st.markdown("""
     .stats-card .value { font-size: 24px; font-weight: 700; color: var(--foreground); margin: 0; }
     .stats-card .label { font-size: 11px; color: var(--muted); margin-top: 2px; }
     
-    /* Project Card Horizontal */
-    .project-card-h {
+    /* Project Card - Lovable Style */
+    .project-card {
         background: var(--card);
         border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 14px 16px;
-        margin-bottom: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
+        border-radius: 12px;
+        padding: 20px;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: all 0.3s;
     }
-    .project-card-h:hover { background: var(--card-hover); border-color: var(--primary); }
-    .project-card-h .info { flex: 1; }
-    .project-card-h .name { font-size: 14px; font-weight: 600; color: var(--foreground); }
-    .project-card-h .count { font-size: 11px; color: var(--muted); }
-    .project-card-h .progress-container { width: 120px; margin: 0 16px; }
-    .project-card-h .progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
-    .project-card-h .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); border-radius: 3px; }
-    .project-card-h .progress-text { font-size: 12px; font-weight: 600; color: var(--foreground); text-align: right; width: 45px; }
-    .project-card-h .stats { font-size: 11px; color: var(--muted); display: flex; gap: 12px; }
+    .project-card:hover { 
+        border-color: rgba(14, 165, 233, 0.5); 
+        box-shadow: 0 10px 25px -5px rgba(14, 165, 233, 0.1);
+    }
+    .project-card .header { display: flex; align-items: flex-start; justify-content: space-between; }
+    .project-card .icon-box { 
+        width: 40px; height: 40px; border-radius: 8px; 
+        display: flex; align-items: center; justify-content: center;
+        font-size: 18px;
+    }
+    .project-card .title-section { display: flex; align-items: center; gap: 12px; }
+    .project-card .name { font-size: 15px; font-weight: 600; color: var(--foreground); }
+    .project-card .count { font-size: 12px; color: var(--muted); }
+    .project-card .chevron { color: var(--muted); transition: transform 0.2s; }
+    .project-card:hover .chevron { transform: translateX(4px); color: var(--primary); }
+    .project-card .progress-section { margin-top: 16px; }
+    .project-card .progress-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    .project-card .progress-bar { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+    .project-card .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); border-radius: 4px; transition: width 0.5s; }
+    .project-card .badges { display: flex; gap: 8px; margin-top: 12px; }
+    .project-card .badge { padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 500; }
+    .badge-success { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+    .badge-outline { background: transparent; border: 1px solid var(--border); color: var(--muted); }
     
     /* Issue Card (Micro View) */
     .issue-card {
@@ -335,34 +345,53 @@ with tab_macro:
     m5.metric("🔵 Em Progresso", em_progresso)
     m6.metric("🚫 Bloqueadas", bloqueadas)
     
-    # Projetos com barra de progresso horizontal
+    # Projetos - Grid 3 colunas estilo Lovable
     st.markdown('<p class="section-title">📁 Projetos</p>', unsafe_allow_html=True)
     
-    for proj in df_original['Projeto'].unique():
+    projetos_list = list(df_original['Projeto'].unique())
+    colors = ['#0ea5e9', '#8b5cf6', '#22c55e', '#f59e0b', '#ef4444']
+    
+    # Usar colunas do Streamlit para grid
+    cols = st.columns(3)
+    
+    for idx, proj in enumerate(projetos_list):
         subset = df_original[df_original['Projeto'] == proj]
         total = len(subset)
         concl = len(subset[subset['Status'].str.contains('Conclu', case=False, na=False)])
         pend = total - concl
         pct = round(concl / total * 100) if total > 0 else 0
+        color = colors[idx % len(colors)]
         
-        st.markdown(f"""
-        <div class="project-card-h">
-            <div class="info">
-                <div class="name">📁 {proj}</div>
-                <div class="count">{total} issues</div>
-            </div>
-            <div class="progress-container">
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: {pct}%"></div>
+        with cols[idx % 3]:
+            st.markdown(f'''
+            <div class="project-card">
+                <div class="header">
+                    <div class="title-section">
+                        <div class="icon-box" style="background: {color}20;">
+                            <span style="color: {color}">📁</span>
+                        </div>
+                        <div>
+                            <div class="name">{proj}</div>
+                            <div class="count">{total} issues</div>
+                        </div>
+                    </div>
+                    <span class="chevron">➤</span>
+                </div>
+                <div class="progress-section">
+                    <div class="progress-label">
+                        <span>Progresso</span>
+                        <span style="font-weight: 600; color: #f1f5f9;">{pct}%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: {pct}%"></div>
+                    </div>
+                </div>
+                <div class="badges">
+                    <span class="badge badge-success">{concl} concluídas</span>
+                    <span class="badge badge-outline">{pend} pendentes</span>
                 </div>
             </div>
-            <div class="progress-text">{pct}%</div>
-            <div class="stats">
-                <span>✅ {concl} concluídas</span>
-                <span>📋 {pend} pendentes</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+            ''', unsafe_allow_html=True)
     
     # Analytics
     st.markdown('<p class="section-title">📊 Analytics</p>', unsafe_allow_html=True)
