@@ -23,7 +23,7 @@ export async function getNotionData(): Promise<Issue[]> {
                 page_size: 100,
                 sorts: [
                     {
-                        property: 'Last edited time',
+                        timestamp: 'last_edited_time',
                         direction: 'descending',
                     },
                 ],
