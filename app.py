@@ -222,15 +222,9 @@ def get_notion_data():
             row['Categoria'] = 'N/A'
 
         # Extrair data de atualização para ordenar issues recentes
+        # Usar last_edited_time do registro para ordenar
         try:
-            if 'Atualizado em ' in props:
-                p = props['Atualizado em ']
-                if p['type'] == 'date' and p['date']:
-                    row['Atualizado'] = p['date']['start']
-                else:
-                    row['Atualizado'] = ''
-            else:
-                row['Atualizado'] = ''
+            row['Atualizado'] = page.get('last_edited_time', '')
         except:
             row['Atualizado'] = ''
 
