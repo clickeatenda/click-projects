@@ -218,10 +218,21 @@ def get_notion_data():
                     row['Categoria'] = p['select']['name'].strip()
                 else:
                     row['Categoria'] = 'N/A'
-            else:
-                row['Categoria'] = 'N/A'
         except:
             row['Categoria'] = 'N/A'
+
+        # Extrair data de atualização para ordenar issues recentes
+        try:
+            if 'Atualizado em ' in props:
+                p = props['Atualizado em ']
+                if p['type'] == 'date' and p['date']:
+                    row['Atualizado'] = p['date']['start']
+                else:
+                    row['Atualizado'] = ''
+            else:
+                row['Atualizado'] = ''
+        except:
+            row['Atualizado'] = ''
 
         rows.append(row)
 
@@ -402,7 +413,11 @@ with col_right:
     # === ISSUES FECHADAS RECENTEMENTE ===
     st.markdown('<p class="section-title">✅ Recém Concluídas</p>', unsafe_allow_html=True)
     
-    df_closed = df_original[df_original['Status'].str.contains('Conclu', case=False, na=False)].head(5)
+    # Filtrar concluídas e ordenar por data mais recente
+    df_closed = df_original[df_original['Status'].str.contains('Conclu', case=False, na=False)].copy()
+    if 'Atualizado' in df_closed.columns:
+        df_closed = df_closed.sort_values('Atualizado', ascending=False)
+    df_closed = df_closed.head(6)
     
     if len(df_closed) > 0:
         for _, row in df_closed.iterrows():
