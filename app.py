@@ -415,16 +415,23 @@ with col_left:
 
     # === PROJETOS ===
     st.markdown('<p class="section-title">📁 Projetos</p>', unsafe_allow_html=True)
-    projetos = df.groupby('Projeto').agg({
-        'Nome': 'count',
-        'Status': lambda x: x.value_counts().to_dict()
-    }).reset_index()
+    
+    # Calcular stats por projeto com case-insensitive
+    proj_stats = []
+    for proj in df['Projeto'].unique():
+        subset = df[df['Projeto'] == proj]
+        proj_stats.append({
+            'Projeto': proj,
+            'Total': len(subset),
+            'Aberto': len(subset[subset['Status'].str.contains('Aberto', case=False, na=False)]),
+            'EmAndamento': len(subset[subset['Status'].str.contains('andamento', case=False, na=False)]),
+            'Concluido': len(subset[subset['Status'].str.contains('Conclu', case=False, na=False)])
+        })
     
     cols = st.columns(2)
-    for idx, (_, row) in enumerate(projetos.iterrows()):
-        sc = row['Status'] if isinstance(row['Status'], dict) else {}
+    for idx, ps in enumerate(proj_stats):
         with cols[idx % 2]:
-            st.markdown(project_card(row['Projeto'], row['Nome'], sc.get('Aberto', 0), sc.get('Em Andamento', 0), sc.get('Concluído', 0)), unsafe_allow_html=True)
+            st.markdown(project_card(ps['Projeto'], ps['Total'], ps['Aberto'], ps['EmAndamento'], ps['Concluido']), unsafe_allow_html=True)
 
 with col_right:
     # === ISSUES FECHADAS RECENTEMENTE ===
@@ -455,6 +462,7 @@ st.dataframe(
         "Status": st.column_config.TextColumn("📊 Status"),
         "Prioridade": st.column_config.TextColumn("🎯 Prioridade"),
         "Categoria": st.column_config.TextColumn("🏷️ Categoria"),
+        "Atualizado": st.column_config.TextColumn("📅 Atualizado"),
     }
 )
 
