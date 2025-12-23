@@ -1,4 +1,4 @@
-export type Priority = 'Alta' | 'Média' | 'Baixa';
+export type Priority = 'Alta' | 'Média' | 'Baixa' | 'Urgente';
 export type Status = 'Aberto' | 'Em Progresso' | 'Concluído' | 'Bloqueado';
 export type IssueType = 'tarefa' | 'bug' | 'feature' | 'melhoria';
 

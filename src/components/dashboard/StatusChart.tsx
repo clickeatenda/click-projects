@@ -1,3 +1,5 @@
+"use client";
+
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { DashboardStats } from '@/types/project';
 
@@ -16,7 +18,7 @@ export function StatusChart({ stats }: StatusChartProps) {
   return (
     <div className="rounded-xl border border-border/50 bg-card p-6">
       <h3 className="mb-4 font-semibold">Distribuição por Status</h3>
-      
+
       <div className="h-[250px]">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -34,15 +36,15 @@ export function StatusChart({ stats }: StatusChartProps) {
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
-            <Tooltip 
-              contentStyle={{ 
+            <Tooltip
+              contentStyle={{
                 backgroundColor: 'hsl(220, 18%, 14%)',
                 border: '1px solid hsl(220, 13%, 22%)',
                 borderRadius: '8px',
                 color: 'hsl(210, 20%, 95%)'
               }}
             />
-            <Legend 
+            <Legend
               verticalAlign="bottom"
               formatter={(value) => <span className="text-sm text-foreground">{value}</span>}
             />

@@ -1,8 +1,10 @@
+"use client";
+
 import { useState } from 'react';
 import { ProjectColumn } from './ProjectColumn';
-import { mockProjects } from '@/data/mockData';
+import { useIssues, getProjectsFromIssues } from '@/hooks/useIssues';
 import { Button } from '@/components/ui/button';
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -13,7 +15,27 @@ import { Filter, SortAsc } from 'lucide-react';
 
 export function MicroView() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  
+  const { data: issues, isLoading } = useIssues();
+
+  if (isLoading) {
+    return (
+      <div className="flex h-64 w-full items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  const safeIssues = issues || [];
+
+  // Apply filters
+  const filteredIssues = safeIssues.filter(issue => {
+    if (filterStatus === 'all') return true;
+    return issue.status.toLowerCase().includes(filterStatus.toLowerCase()) ||
+      (filterStatus === 'em-progresso' && (issue.status.toLowerCase().includes('andamento') || issue.status.toLowerCase().includes('progresso')));
+  });
+
+  const projects = getProjectsFromIssues(filteredIssues);
+
   return (
     <div className="space-y-6">
       {/* Filters */}
@@ -32,21 +54,21 @@ export function MicroView() {
               <SelectItem value="bloqueado">Bloqueado</SelectItem>
             </SelectContent>
           </Select>
-          
+
           <Button variant="outline" size="sm" className="gap-2">
             <SortAsc className="h-4 w-4" />
             Ordenar
           </Button>
         </div>
-        
+
         <p className="text-sm text-muted-foreground">
-          {mockProjects.reduce((acc, p) => acc + p.issues.length, 0)} issues em {mockProjects.length} projetos
+          {filteredIssues.length} issues em {projects.length} projetos
         </p>
       </div>
 
       {/* Kanban Board */}
       <div className="grid gap-4 lg:grid-cols-3" style={{ minHeight: '600px' }}>
-        {mockProjects.map((project) => (
+        {projects.map((project) => (
           <ProjectColumn key={project.id} project={project} />
         ))}
       </div>
