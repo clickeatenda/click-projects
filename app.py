@@ -320,6 +320,98 @@ if df_original.empty:
 if busca:
     df_original = df_original[df_original['Nome'].str.contains(busca, case=False, na=False)]
 
+# === VERIFICAR SE TEM PROJETO SELECIONADO ===
+if 'projeto_selecionado' in st.session_state and st.session_state.projeto_selecionado:
+    proj = st.session_state.projeto_selecionado
+    subset = df_original[df_original['Projeto'] == proj]
+    
+    # Header da página do projeto
+    col_back, col_title = st.columns([1, 10])
+    with col_back:
+        if st.button("← Voltar"):
+            st.session_state.projeto_selecionado = None
+            st.rerun()
+    with col_title:
+        st.markdown(f'<h2 style="margin: 0; color: #f1f5f9;">📁 {proj}</h2>', unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # Métricas do projeto
+    total = len(subset)
+    concluidas_p = len(subset[subset['Status'].str.contains('Conclu', case=False, na=False)])
+    abertas_p = len(subset[subset['Status'].str.contains('Aberto', case=False, na=False)])
+    andamento_p = len(subset[subset['Status'].str.contains('andamento', case=False, na=False)])
+    pct = round(concluidas_p / total * 100) if total > 0 else 0
+    
+    m1, m2, m3, m4, m5 = st.columns(5)
+    m1.metric("📋 Total", total)
+    m2.metric("✅ Concluídas", concluidas_p)
+    m3.metric("🟡 Abertas", abertas_p)
+    m4.metric("🔵 Em Andamento", andamento_p)
+    m5.metric("📊 Progresso", f"{pct}%")
+    
+    # Gráficos
+    col_chart1, col_chart2 = st.columns(2)
+    
+    with col_chart1:
+        st.caption("Distribuição por Status")
+        status_p = subset['Status'].value_counts()
+        if len(status_p) > 0:
+            fig_p1 = go.Figure(data=[go.Pie(
+                labels=status_p.index,
+                values=status_p.values,
+                hole=0.5,
+                marker_colors=[get_status_color(s) for s in status_p.index],
+                textinfo='label+value'
+            )])
+            fig_p1.update_layout(
+                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                font=dict(color='#f1f5f9'),
+                showlegend=False,
+                margin=dict(t=10, b=10, l=10, r=10), height=250
+            )
+            st.plotly_chart(fig_p1, use_container_width=True)
+    
+    with col_chart2:
+        st.caption("Distribuição por Prioridade")
+        prio_p = subset['Prioridade'].value_counts()
+        if len(prio_p) > 0:
+            fig_p2 = go.Figure(data=[go.Bar(
+                x=prio_p.index,
+                y=prio_p.values,
+                marker_color=['#ef4444' if 'Urgente' in p else '#f59e0b' if 'Alta' in p else '#0ea5e9' if 'Média' in p else '#22c55e' for p in prio_p.index],
+                text=prio_p.values,
+                textposition='outside'
+            )])
+            fig_p2.update_layout(
+                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                font=dict(color='#f1f5f9'),
+                xaxis=dict(showgrid=False, tickfont=dict(size=10, color='#94a3b8')),
+                yaxis=dict(showgrid=True, gridcolor='#2a3140', tickfont=dict(color='#94a3b8')),
+                margin=dict(t=10, b=30, l=30, r=10), height=250
+            )
+            st.plotly_chart(fig_p2, use_container_width=True)
+    
+    # Lista de issues do projeto
+    st.markdown('<p class="section-title">📋 Issues do Projeto</p>', unsafe_allow_html=True)
+    
+    df_proj = subset.sort_values('Atualizado', ascending=False)
+    st.dataframe(
+        df_proj,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "Nome": st.column_config.TextColumn("📝 Issue", width="large"),
+            "Status": st.column_config.TextColumn("📊 Status"),
+            "Prioridade": st.column_config.TextColumn("🎯 Prioridade"),
+            "Categoria": st.column_config.TextColumn("🏷️ Categoria"),
+            "Criado": st.column_config.TextColumn("📅 Criado"),
+            "Atualizado": st.column_config.TextColumn("🔄 Atualizado"),
+        }
+    )
+    
+    st.stop()  # Para a execução aqui - não mostra o resto do dashboard
+
 # === TABS MACRO / MICRO ===
 tab_macro, tab_micro = st.tabs(["📊 Macro", "📋 Micro"])
 
@@ -363,8 +455,9 @@ with tab_macro:
         color = colors[idx % len(colors)]
         
         with cols[idx % 3]:
+            # Card visual
             st.markdown(f'''
-            <div class="project-card">
+            <div class="project-card" style="margin-bottom: 5px;">
                 <div class="header">
                     <div class="title-section">
                         <div class="icon-box" style="background: {color}20;">
@@ -392,6 +485,10 @@ with tab_macro:
                 </div>
             </div>
             ''', unsafe_allow_html=True)
+            # Botão para abrir detalhes
+            if st.button(f"📂 Ver detalhes", key=f"btn_{proj}", use_container_width=True):
+                st.session_state.projeto_selecionado = proj
+                st.rerun()
     
     # Analytics
     st.markdown('<p class="section-title">📊 Analytics</p>', unsafe_allow_html=True)
