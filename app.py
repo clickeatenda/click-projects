@@ -314,16 +314,18 @@ total_projetos = df['Projeto'].nunique()
 abertos = len(df[df['Status'].str.contains('Aberto', case=False, na=False)])
 em_andamento = len(df[df['Status'].str.contains('andamento', case=False, na=False)])
 concluidos = len(df[df['Status'].str.contains('Conclu', case=False, na=False)])
-alta_prio = len(df[df['Prioridade'].str.contains('Alta|Urgente', case=False, na=False, regex=True)])
+alta_prio = len(df[df['Prioridade'].str.contains('Alta', case=False, na=False)])
+urgente_prio = len(df[df['Prioridade'].str.contains('Urgente', case=False, na=False)])
 
 st.markdown('<p class="section-title">📈 Métricas</p>', unsafe_allow_html=True)
-m1, m2, m3, m4, m5, m6 = st.columns(6)
+m1, m2, m3, m4, m5, m6, m7 = st.columns(7)
 m1.metric("📁 Projetos", total_projetos)
 m2.metric("📋 Total", total_issues)
 m3.metric("🟡 Abertas", abertos)
 m4.metric("🔵 Andamento", em_andamento)
 m5.metric("✅ Concluídas", concluidos)
-m6.metric("🔥 Alta", alta_prio)
+m6.metric("🟠 Alta", alta_prio)
+m7.metric("🔴 Urgente", urgente_prio)
 
 # === LAYOUT PRINCIPAL ===
 col_left, col_right = st.columns([2, 1])
@@ -400,7 +402,7 @@ with col_right:
     # === ISSUES FECHADAS RECENTEMENTE ===
     st.markdown('<p class="section-title">✅ Recém Concluídas</p>', unsafe_allow_html=True)
     
-    df_closed = df_original[df_original['Status'] == 'Concluído'].head(8)
+    df_closed = df_original[df_original['Status'].str.contains('Conclu', case=False, na=False)].head(5)
     
     if len(df_closed) > 0:
         for _, row in df_closed.iterrows():
