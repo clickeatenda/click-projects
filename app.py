@@ -22,7 +22,11 @@ st.set_page_config(
 
 # --- Estado para filtros ---
 if 'filtro_status' not in st.session_state:
-    st.session_state.filtro_status = None  # None = sem filtro
+    st.session_state.filtro_status = None
+if 'filtro_projeto' not in st.session_state:
+    st.session_state.filtro_projeto = None
+if 'filtro_prioridade' not in st.session_state:
+    st.session_state.filtro_prioridade = None
 
 # --- CSS Premium ---
 st.markdown("""
@@ -52,16 +56,16 @@ st.markdown("""
         border: 1px solid var(--border);
         border-radius: 16px;
         padding: 16px 24px;
-        margin-bottom: 24px;
+        margin-bottom: 16px;
         display: flex;
         align-items: center;
         gap: 16px;
     }
     
-    .main-header .logo-img { width: 56px; height: 56px; border-radius: 12px; }
+    .main-header .logo-img { width: 50px; height: 50px; border-radius: 10px; }
     
     .main-header h1 {
-        font-size: 26px;
+        font-size: 24px;
         font-weight: 700;
         margin: 0;
         background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
@@ -69,25 +73,49 @@ st.markdown("""
         -webkit-text-fill-color: transparent;
     }
     
-    .main-header p { font-size: 13px; color: var(--muted); margin: 2px 0 0 0; }
+    .main-header p { font-size: 12px; color: var(--muted); margin: 2px 0 0 0; }
     
-    .section-title { font-size: 16px; font-weight: 600; color: var(--foreground); margin: 24px 0 12px 0; }
+    .section-title { font-size: 15px; font-weight: 600; color: var(--foreground); margin: 20px 0 10px 0; }
     
     .project-card {
         background: var(--card);
         border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 16px;
-        margin-bottom: 12px;
+        border-radius: 10px;
+        padding: 14px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
     }
     
-    .project-card:hover { border-color: var(--primary); }
-    .project-card .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .project-card .name { font-size: 15px; font-weight: 600; color: var(--foreground); }
-    .project-card .count { background: var(--primary); color: var(--background); padding: 3px 10px; border-radius: 16px; font-size: 13px; font-weight: 600; }
-    .project-card .stats { display: flex; gap: 12px; font-size: 12px; color: var(--muted); }
+    .project-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+    .project-card .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .project-card .name { font-size: 14px; font-weight: 600; color: var(--foreground); }
+    .project-card .count { background: var(--primary); color: var(--background); padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+    .project-card .stats { display: flex; gap: 10px; font-size: 11px; color: var(--muted); }
     
-    .footer { border-top: 1px solid var(--border); padding: 16px 0; margin-top: 32px; display: flex; justify-content: space-between; color: var(--muted); font-size: 13px; }
+    .closed-issue {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .closed-issue .icon { color: var(--success); font-size: 16px; }
+    .closed-issue .title { color: var(--foreground); font-size: 13px; flex: 1; }
+    .closed-issue .project { color: var(--muted); font-size: 11px; background: var(--border); padding: 2px 8px; border-radius: 10px; }
+    
+    .filter-box {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 12px 16px;
+        margin-bottom: 16px;
+    }
+    
+    .footer { border-top: 1px solid var(--border); padding: 12px 0; margin-top: 24px; display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; }
     
     #MainMenu, footer, header { visibility: hidden; }
 </style>
@@ -114,11 +142,11 @@ HEADERS = {
 def get_notion_data():
     if USE_MOCK_DATA:
         return pd.DataFrame({
-            'Nome': ['Demo 1', 'Demo 2', 'Demo 3'],
-            'Projeto': ['Demo', 'Demo', 'Demo'],
-            'Status': ['Aberto', 'Em Andamento', 'Concluído'],
-            'Prioridade': ['🟠 Alta', '🟡 Média', '🔵 Baixa'],
-            'Categoria': ['WEB', 'WEB', 'WEB']
+            'Nome': ['Demo 1', 'Demo 2', 'Demo 3', 'Demo 4', 'Demo 5'],
+            'Projeto': ['Projeto A', 'Projeto A', 'Projeto B', 'Projeto B', 'Projeto C'],
+            'Status': ['Aberto', 'Em Andamento', 'Concluído', 'Concluído', 'Aberto'],
+            'Prioridade': ['🟠 Alta', '🟡 Média', '🔵 Baixa', '🟠 Alta', '🟡 Média'],
+            'Categoria': ['WEB', 'WEB', 'Mobile', 'Mobile', 'WEB']
         })
     
     url = f"https://api.notion.com/v1/databases/{DATABASE_ID}/query"
@@ -207,10 +235,19 @@ def project_card(name, total, aberto, em_prog, concl):
             <span class="count">{total}</span>
         </div>
         <div class="stats">
-            <span>🟡 Aberto: {aberto}</span>
-            <span>🔵 Progresso: {em_prog}</span>
-            <span>🟢 Concluído: {concl}</span>
+            <span>🟡 {aberto}</span>
+            <span>🔵 {em_prog}</span>
+            <span>🟢 {concl}</span>
         </div>
+    </div>
+    """
+
+def closed_issue_card(nome, projeto):
+    return f"""
+    <div class="closed-issue">
+        <span class="icon">✅</span>
+        <span class="title">{nome[:50]}{'...' if len(nome) > 50 else ''}</span>
+        <span class="project">{projeto}</span>
     </div>
     """
 
@@ -219,7 +256,7 @@ logo_b64 = get_base64_image("public/logo.png")
 if logo_b64:
     st.markdown(f"""<div class="main-header"><img src="data:image/png;base64,{logo_b64}" class="logo-img"><div><h1>Click Projects</h1><p>Dashboard Executivo • Integração Notion</p></div></div>""", unsafe_allow_html=True)
 else:
-    st.markdown("""<div class="main-header"><div style="font-size:40px">🚀</div><div><h1>Click Projects</h1><p>Dashboard Executivo</p></div></div>""", unsafe_allow_html=True)
+    st.markdown("""<div class="main-header"><div style="font-size:36px">🚀</div><div><h1>Click Projects</h1><p>Dashboard Executivo</p></div></div>""", unsafe_allow_html=True)
 
 # === CARREGAR DADOS ===
 df_original = get_notion_data()
@@ -228,148 +265,173 @@ if df_original.empty:
     st.warning("⚠️ Nenhum dado encontrado.")
     st.stop()
 
-# === MÉTRICAS GLOBAIS (sempre do df original) ===
-total_issues = len(df_original)
-total_projetos = df_original['Projeto'].nunique()
-abertos = len(df_original[df_original['Status'] == 'Aberto'])
-em_andamento = len(df_original[df_original['Status'] == 'Em Andamento'])
-concluidos = len(df_original[df_original['Status'] == 'Concluído'])
-alta_prio = len(df_original[df_original['Prioridade'].str.contains('Alta', case=False, na=False)])
+# === FILTROS SUPERIORES ===
+st.markdown('<div class="filter-box">', unsafe_allow_html=True)
+fc1, fc2, fc3, fc4 = st.columns([2, 2, 2, 1])
 
-# === VISÃO GERAL ===
-st.markdown('<p class="section-title">📈 Visão Geral</p>', unsafe_allow_html=True)
+with fc1:
+    projeto_selecionado = st.selectbox(
+        "📁 Projeto",
+        options=["Todos"] + list(df_original['Projeto'].unique()),
+        index=0
+    )
 
-# Filtro ativo
-filtro = st.session_state.filtro_status
-if filtro:
-    c1, c2 = st.columns([5, 1])
-    with c1:
-        st.info(f"🔍 **Filtro:** {filtro} | Dados filtrados abaixo")
-    with c2:
-        if st.button("❌ Limpar", use_container_width=True):
-            st.session_state.filtro_status = None
-            st.rerun()
+with fc2:
+    status_selecionado = st.selectbox(
+        "📊 Status",
+        options=["Todos", "Aberto", "Em Andamento", "Concluído"],
+        index=0
+    )
 
-# Cards clicáveis
-c = st.columns(6)
-with c[0]:
-    st.metric("📁 Projetos", total_projetos)
-with c[1]:
-    st.metric("📋 Total", total_issues)
-with c[2]:
-    if st.button(f"🟡 Abertas: {abertos}", use_container_width=True):
-        st.session_state.filtro_status = "Aberto"
-        st.rerun()
-with c[3]:
-    if st.button(f"🔵 Andamento: {em_andamento}", use_container_width=True):
-        st.session_state.filtro_status = "Em Andamento"
-        st.rerun()
-with c[4]:
-    if st.button(f"✅ Concluídas: {concluidos}", use_container_width=True):
-        st.session_state.filtro_status = "Concluído"
-        st.rerun()
-with c[5]:
-    if st.button(f"🔥 Alta: {alta_prio}", use_container_width=True):
-        st.session_state.filtro_status = "Alta"
+with fc3:
+    prioridade_selecionada = st.selectbox(
+        "🎯 Prioridade",
+        options=["Todos"] + list(df_original['Prioridade'].unique()),
+        index=0
+    )
+
+with fc4:
+    st.write("")
+    st.write("")
+    if st.button("🔄 Atualizar", use_container_width=True):
+        st.cache_data.clear()
         st.rerun()
 
-# === APLICAR FILTRO ===
-if filtro:
-    if filtro == "Alta":
-        df = df_original[df_original['Prioridade'].str.contains('Alta', case=False, na=False)]
+st.markdown('</div>', unsafe_allow_html=True)
+
+# === APLICAR FILTROS ===
+df = df_original.copy()
+if projeto_selecionado != "Todos":
+    df = df[df['Projeto'] == projeto_selecionado]
+if status_selecionado != "Todos":
+    df = df[df['Status'] == status_selecionado]
+if prioridade_selecionada != "Todos":
+    df = df[df['Prioridade'] == prioridade_selecionada]
+
+# === MÉTRICAS ===
+total_issues = len(df)
+total_projetos = df['Projeto'].nunique()
+abertos = len(df[df['Status'] == 'Aberto'])
+em_andamento = len(df[df['Status'] == 'Em Andamento'])
+concluidos = len(df[df['Status'] == 'Concluído'])
+alta_prio = len(df[df['Prioridade'].str.contains('Alta', case=False, na=False)])
+
+st.markdown('<p class="section-title">📈 Métricas</p>', unsafe_allow_html=True)
+m1, m2, m3, m4, m5, m6 = st.columns(6)
+m1.metric("📁 Projetos", total_projetos)
+m2.metric("📋 Total", total_issues)
+m3.metric("🟡 Abertas", abertos)
+m4.metric("🔵 Andamento", em_andamento)
+m5.metric("✅ Concluídas", concluidos)
+m6.metric("🔥 Alta", alta_prio)
+
+# === LAYOUT PRINCIPAL ===
+col_left, col_right = st.columns([2, 1])
+
+with col_left:
+    # === GRÁFICOS ===
+    st.markdown('<p class="section-title">📊 Analytics</p>', unsafe_allow_html=True)
+    
+    g1, g2 = st.columns(2)
+    
+    with g1:
+        st.caption("Issues por Projeto")
+        proj_counts = df['Projeto'].value_counts()
+        max_val = proj_counts.max() if len(proj_counts) > 0 else 1
+        fig = go.Figure(data=[go.Bar(
+            x=proj_counts.index,
+            y=proj_counts.values,
+            marker_color=['#0ea5e9', '#8b5cf6', '#22c55e', '#f59e0b', '#ef4444'][:len(proj_counts)],
+            text=proj_counts.values,
+            textposition='outside',
+            textfont=dict(color='#f1f5f9', size=12),
+        )])
+        fig.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='#f1f5f9'),
+            xaxis=dict(showgrid=False, tickfont=dict(color='#94a3b8', size=10)),
+            yaxis=dict(showgrid=True, gridcolor='#2a3140', tickfont=dict(color='#94a3b8'), range=[0, max_val * 1.25]),
+            margin=dict(t=30, b=30, l=30, r=10), height=280
+        )
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with g2:
+        st.caption("Distribuição por Status")
+        status_counts = df['Status'].value_counts()
+        colors = {'Aberto': '#f59e0b', 'Em Andamento': '#0ea5e9', 'Concluído': '#22c55e', 'N/A': '#64748b'}
+        fig2 = go.Figure(data=[go.Pie(
+            labels=status_counts.index,
+            values=status_counts.values,
+            hole=0.5,
+            marker_colors=[colors.get(s, '#64748b') for s in status_counts.index],
+            textinfo='label+value',
+            textfont=dict(color='#f1f5f9', size=10),
+        )])
+        fig2.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='#f1f5f9'),
+            showlegend=False,
+            margin=dict(t=20, b=20, l=20, r=20), height=280
+        )
+        st.plotly_chart(fig2, use_container_width=True)
+
+    # === PROJETOS ===
+    st.markdown('<p class="section-title">📁 Projetos</p>', unsafe_allow_html=True)
+    projetos = df.groupby('Projeto').agg({
+        'Nome': 'count',
+        'Status': lambda x: x.value_counts().to_dict()
+    }).reset_index()
+    
+    cols = st.columns(2)
+    for idx, (_, row) in enumerate(projetos.iterrows()):
+        sc = row['Status'] if isinstance(row['Status'], dict) else {}
+        with cols[idx % 2]:
+            st.markdown(project_card(row['Projeto'], row['Nome'], sc.get('Aberto', 0), sc.get('Em Andamento', 0), sc.get('Concluído', 0)), unsafe_allow_html=True)
+
+with col_right:
+    # === ISSUES FECHADAS RECENTEMENTE ===
+    st.markdown('<p class="section-title">✅ Recém Concluídas</p>', unsafe_allow_html=True)
+    
+    df_closed = df_original[df_original['Status'] == 'Concluído'].head(8)
+    
+    if len(df_closed) > 0:
+        for _, row in df_closed.iterrows():
+            st.markdown(closed_issue_card(row['Nome'], row['Projeto']), unsafe_allow_html=True)
     else:
-        df = df_original[df_original['Status'] == filtro]
-else:
-    df = df_original
+        st.info("Nenhuma issue concluída ainda.")
 
-# === GRÁFICOS ===
-st.markdown('<p class="section-title">📊 Analytics</p>', unsafe_allow_html=True)
-col1, col2 = st.columns(2)
+# === TABELA COMPLETA ===
+st.markdown('<p class="section-title">📋 Todas as Issues</p>', unsafe_allow_html=True)
 
-with col1:
-    st.caption("Issues por Projeto")
-    proj_counts = df['Projeto'].value_counts()
-    max_val = proj_counts.max() if len(proj_counts) > 0 else 1
-    fig = go.Figure(data=[go.Bar(
-        x=proj_counts.index,
-        y=proj_counts.values,
-        marker_color=['#0ea5e9', '#8b5cf6', '#22c55e', '#f59e0b', '#ef4444'][:len(proj_counts)],
-        text=proj_counts.values,
-        textposition='outside',
-        textfont=dict(color='#f1f5f9', size=13),
-    )])
-    fig.update_layout(
-        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(color='#f1f5f9'),
-        xaxis=dict(showgrid=False, tickfont=dict(color='#94a3b8')),
-        yaxis=dict(showgrid=True, gridcolor='#2a3140', tickfont=dict(color='#94a3b8'), range=[0, max_val * 1.2]),
-        margin=dict(t=30, b=40, l=40, r=20), height=360
-    )
-    st.plotly_chart(fig, use_container_width=True)
-
-with col2:
-    st.caption("Distribuição por Status")
-    status_counts = df['Status'].value_counts()
-    colors = {'Aberto': '#f59e0b', 'Em Andamento': '#0ea5e9', 'Concluído': '#22c55e', 'N/A': '#64748b'}
-    fig2 = go.Figure(data=[go.Pie(
-        labels=status_counts.index,
-        values=status_counts.values,
-        hole=0.5,
-        marker_colors=[colors.get(s, '#64748b') for s in status_counts.index],
-        textinfo='label+value',
-        textfont=dict(color='#f1f5f9', size=11),
-    )])
-    fig2.update_layout(
-        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(color='#f1f5f9'),
-        showlegend=True,
-        legend=dict(orientation='h', y=-0.1, x=0.5, xanchor='center', font=dict(color='#94a3b8')),
-        margin=dict(t=20, b=60, l=20, r=20), height=340
-    )
-    st.plotly_chart(fig2, use_container_width=True)
-
-# === PROJETOS ===
-st.markdown('<p class="section-title">📁 Projetos</p>', unsafe_allow_html=True)
-projetos = df.groupby('Projeto').agg({
-    'Nome': 'count',
-    'Status': lambda x: x.value_counts().to_dict()
-}).reset_index()
-
-cols = st.columns(2)
-for idx, (_, row) in enumerate(projetos.iterrows()):
-    sc = row['Status'] if isinstance(row['Status'], dict) else {}
-    with cols[idx % 2]:
-        st.markdown(project_card(row['Projeto'], row['Nome'], sc.get('Aberto', 0), sc.get('Em Andamento', 0), sc.get('Concluído', 0)), unsafe_allow_html=True)
-
-# === TABELA ===
-st.markdown('<p class="section-title">📋 Detalhes</p>', unsafe_allow_html=True)
-
-# Filtros manuais
-c1, c2, c3 = st.columns(3)
-with c1:
-    fp = st.multiselect("Projeto", options=df["Projeto"].unique())
-with c2:
-    fs = st.multiselect("Status", options=df["Status"].unique())
-with c3:
-    fpr = st.multiselect("Prioridade", options=df["Prioridade"].unique())
-
-df_table = df.copy()
-if fp: df_table = df_table[df_table["Projeto"].isin(fp)]
-if fs: df_table = df_table[df_table["Status"].isin(fs)]
-if fpr: df_table = df_table[df_table["Prioridade"].isin(fpr)]
-
-st.dataframe(df_table, use_container_width=True, hide_index=True)
+st.dataframe(
+    df,
+    use_container_width=True,
+    hide_index=True,
+    column_config={
+        "Nome": st.column_config.TextColumn("📝 Issue", width="large"),
+        "Projeto": st.column_config.TextColumn("📁 Projeto"),
+        "Status": st.column_config.TextColumn("📊 Status"),
+        "Prioridade": st.column_config.TextColumn("🎯 Prioridade"),
+        "Categoria": st.column_config.TextColumn("🏷️ Categoria"),
+    }
+)
 
 # === FOOTER ===
 st.markdown('<div class="footer"><span>© 2025 Click Projects</span><span>Notion + Streamlit</span></div>', unsafe_allow_html=True)
 
 # === SIDEBAR ===
 with st.sidebar:
-    st.markdown("### ⚙️")
+    st.markdown("### ⚙️ Configurações")
     if USE_MOCK_DATA:
-        st.info("Modo Demo")
+        st.info("🔧 Modo Demo")
     else:
-        st.success("✅ Conectado")
-    if st.button("🔄 Atualizar"):
-        st.cache_data.clear()
-        st.rerun()
+        st.success("✅ Conectado ao Notion")
+    
+    st.markdown("---")
+    st.caption("Filtros ativos:")
+    if projeto_selecionado != "Todos":
+        st.write(f"📁 {projeto_selecionado}")
+    if status_selecionado != "Todos":
+        st.write(f"📊 {status_selecionado}")
+    if prioridade_selecionada != "Todos":
+        st.write(f"🎯 {prioridade_selecionada}")
