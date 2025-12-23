@@ -314,7 +314,7 @@ total_projetos = df['Projeto'].nunique()
 abertos = len(df[df['Status'].str.contains('Aberto', case=False, na=False)])
 em_andamento = len(df[df['Status'].str.contains('andamento', case=False, na=False)])
 concluidos = len(df[df['Status'].str.contains('Conclu', case=False, na=False)])
-alta_prio = len(df[df['Prioridade'].str.contains('Alta', case=False, na=False)])
+alta_prio = len(df[df['Prioridade'].str.contains('Alta|Urgente', case=False, na=False, regex=True)])
 
 st.markdown('<p class="section-title">📈 Métricas</p>', unsafe_allow_html=True)
 m1, m2, m3, m4, m5, m6 = st.columns(6)
