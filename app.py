@@ -302,11 +302,8 @@ with fc3:
     )
 
 with fc4:
-    st.write("")
-    st.write("")
-    if st.button("🔄", help="Atualizar dados"):
-        st.cache_data.clear()
-        st.rerun()
+    # Usar selectbox invísivel para alinhar com outros campos
+    st.selectbox("​", options=["🔄"], key="btn_refresh", label_visibility="hidden", on_change=lambda: (st.cache_data.clear(), st.rerun()))
 
 st.markdown('</div>', unsafe_allow_html=True)
 
@@ -392,9 +389,35 @@ with col_left:
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
             font=dict(color='#f1f5f9'),
             showlegend=False,
-            margin=dict(t=20, b=20, l=20, r=20), height=280
+            margin=dict(t=20, b=20, l=20, r=20), height=250
         )
         st.plotly_chart(fig2, use_container_width=True)
+    
+    # === GRÁFICO DE PROGRESSO POR PROJETO ===
+    st.caption("Progresso por Projeto")
+    
+    # Calcular % de conclusão por projeto
+    proj_progress = df_original.groupby('Projeto').apply(
+        lambda x: round(len(x[x['Status'].str.contains('Conclu', case=False, na=False)]) / len(x) * 100, 1) if len(x) > 0 else 0
+    ).sort_values(ascending=True)
+    
+    fig3 = go.Figure(data=[go.Bar(
+        y=proj_progress.index,
+        x=proj_progress.values,
+        orientation='h',
+        marker_color=['#22c55e' if v >= 70 else '#0ea5e9' if v >= 40 else '#f59e0b' for v in proj_progress.values],
+        text=[f'{v}%' for v in proj_progress.values],
+        textposition='outside',
+        textfont=dict(color='#f1f5f9', size=11),
+    )])
+    fig3.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='#f1f5f9'),
+        xaxis=dict(showgrid=True, gridcolor='#2a3140', tickfont=dict(color='#94a3b8'), range=[0, 110]),
+        yaxis=dict(showgrid=False, tickfont=dict(color='#94a3b8', size=10)),
+        margin=dict(t=10, b=20, l=10, r=30), height=180
+    )
+    st.plotly_chart(fig3, use_container_width=True)
 
     # === PROJETOS ===
     st.markdown('<p class="section-title">📁 Projetos</p>', unsafe_allow_html=True)
