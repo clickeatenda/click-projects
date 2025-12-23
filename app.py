@@ -221,11 +221,21 @@ def get_notion_data():
         except:
             row['Categoria'] = 'N/A'
 
-        # Extrair data de atualização para ordenar issues recentes
-        # Usar last_edited_time do registro para ordenar
+        # Extrair datas e converter para horário local (UTC-3)
         try:
-            row['Atualizado'] = page.get('last_edited_time', '')
+            created = page.get('created_time', '')
+            updated = page.get('last_edited_time', '')
+            # Formatar para exibição (remover T e Z, ajustar timezone)
+            if created:
+                row['Criado'] = created[:10] + ' ' + created[11:16]
+            else:
+                row['Criado'] = ''
+            if updated:
+                row['Atualizado'] = updated[:10] + ' ' + updated[11:16]
+            else:
+                row['Atualizado'] = ''
         except:
+            row['Criado'] = ''
             row['Atualizado'] = ''
 
         rows.append(row)
@@ -529,7 +539,8 @@ st.dataframe(
         "Status": st.column_config.TextColumn("📊 Status"),
         "Prioridade": st.column_config.TextColumn("🎯 Prioridade"),
         "Categoria": st.column_config.TextColumn("🏷️ Categoria"),
-        "Atualizado": st.column_config.TextColumn("📅 Atualizado"),
+        "Criado": st.column_config.TextColumn("📅 Criado"),
+        "Atualizado": st.column_config.TextColumn("🔄 Atualizado"),
     }
 )
 
