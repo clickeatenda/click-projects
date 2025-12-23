@@ -258,6 +258,14 @@ def closed_issue_card(nome, projeto):
     </div>
     """
 
+def get_status_color(s):
+    """Retorna cor baseada no status (case-insensitive)"""
+    s_lower = s.lower()
+    if 'aberto' in s_lower: return '#f59e0b'
+    elif 'andamento' in s_lower: return '#0ea5e9'
+    elif 'conclu' in s_lower: return '#22c55e'
+    else: return '#64748b'
+
 # === HEADER ===
 logo_b64 = get_base64_image("public/logo.png")
 if logo_b64:
@@ -365,14 +373,6 @@ with col_left:
         st.caption("Distribuição por Status")
         status_counts = df['Status'].value_counts()
         
-        # Mapear cores com case-insensitive
-        def get_status_color(s):
-            s_lower = s.lower()
-            if 'aberto' in s_lower: return '#f59e0b'
-            elif 'andamento' in s_lower: return '#0ea5e9'
-            elif 'conclu' in s_lower: return '#22c55e'
-            else: return '#64748b'
-        
         fig2 = go.Figure(data=[go.Pie(
             labels=status_counts.index,
             values=status_counts.values,
@@ -416,26 +416,86 @@ with col_left:
     st.plotly_chart(fig3, use_container_width=True)
 
     # === PROJETOS ===
-    st.markdown('<p class="section-title">📁 Projetos</p>', unsafe_allow_html=True)
+    st.markdown('<p class="section-title">📁 Projetos (clique para detalhes)</p>', unsafe_allow_html=True)
     
     # Calcular stats por projeto com case-insensitive
-    proj_stats = []
-    for proj in df['Projeto'].unique():
-        subset = df[df['Projeto'] == proj]
-        proj_stats.append({
-            'Projeto': proj,
-            'Total': len(subset),
-            'Aberto': len(subset[subset['Status'].str.contains('Aberto', case=False, na=False)]),
-            'EmAndamento': len(subset[subset['Status'].str.contains('andamento', case=False, na=False)]),
-            'Concluido': len(subset[subset['Status'].str.contains('Conclu', case=False, na=False)]),
-            'Alta': len(subset[subset['Prioridade'].str.contains('Alta', case=False, na=False)]),
-            'Urgente': len(subset[subset['Prioridade'].str.contains('Urgente', case=False, na=False)])
-        })
-    
-    cols = st.columns(2)
-    for idx, ps in enumerate(proj_stats):
-        with cols[idx % 2]:
-            st.markdown(project_card(ps['Projeto'], ps['Total'], ps['Aberto'], ps['EmAndamento'], ps['Concluido'], ps['Alta'], ps['Urgente']), unsafe_allow_html=True)
+    for proj in df_original['Projeto'].unique():
+        subset = df_original[df_original['Projeto'] == proj]
+        total = len(subset)
+        abertos = len(subset[subset['Status'].str.contains('Aberto', case=False, na=False)])
+        em_andamento = len(subset[subset['Status'].str.contains('andamento', case=False, na=False)])
+        concluidos = len(subset[subset['Status'].str.contains('Conclu', case=False, na=False)])
+        alta = len(subset[subset['Prioridade'].str.contains('Alta', case=False, na=False)])
+        urgente = len(subset[subset['Prioridade'].str.contains('Urgente', case=False, na=False)])
+        pct_concluido = round(concluidos / total * 100, 1) if total > 0 else 0
+        
+        with st.expander(f"📁 **{proj}** — {total} issues ({pct_concluido}% concluído)"):
+            # Métricas do projeto
+            m1, m2, m3, m4, m5 = st.columns(5)
+            m1.metric("🟡 Abertas", abertos)
+            m2.metric("🔵 Andamento", em_andamento)
+            m3.metric("🟢 Concluídas", concluidos)
+            m4.metric("🟠 Alta", alta)
+            m5.metric("🔴 Urgente", urgente)
+            
+            # Gráficos do projeto
+            g1, g2 = st.columns(2)
+            
+            with g1:
+                # Gráfico de pizza - Status do projeto
+                status_proj = subset['Status'].value_counts()
+                fig_proj = go.Figure(data=[go.Pie(
+                    labels=status_proj.index,
+                    values=status_proj.values,
+                    hole=0.4,
+                    marker_colors=[get_status_color(s) for s in status_proj.index],
+                    textinfo='label+value',
+                    textfont=dict(size=10)
+                )])
+                fig_proj.update_layout(
+                    title=dict(text="Status", font=dict(size=12, color='#f1f5f9')),
+                    paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                    font=dict(color='#f1f5f9'),
+                    showlegend=False,
+                    margin=dict(t=30, b=10, l=10, r=10), height=200
+                )
+                st.plotly_chart(fig_proj, use_container_width=True)
+            
+            with g2:
+                # Gráfico de barras - Prioridade do projeto
+                prio_proj = subset['Prioridade'].value_counts()
+                fig_prio = go.Figure(data=[go.Bar(
+                    x=prio_proj.index,
+                    y=prio_proj.values,
+                    marker_color=['#ef4444' if 'Urgente' in p else '#f59e0b' if 'Alta' in p else '#0ea5e9' if 'Média' in p else '#22c55e' for p in prio_proj.index],
+                    text=prio_proj.values,
+                    textposition='outside',
+                    textfont=dict(size=10)
+                )])
+                fig_prio.update_layout(
+                    title=dict(text="Prioridade", font=dict(size=12, color='#f1f5f9')),
+                    paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                    font=dict(color='#f1f5f9'),
+                    xaxis=dict(showgrid=False, tickfont=dict(size=9, color='#94a3b8')),
+                    yaxis=dict(showgrid=True, gridcolor='#2a3140', tickfont=dict(color='#94a3b8')),
+                    margin=dict(t=30, b=30, l=30, r=10), height=200
+                )
+                st.plotly_chart(fig_prio, use_container_width=True)
+            
+            # Lista das últimas 5 issues do projeto
+            st.caption("📋 Últimas issues do projeto:")
+            df_proj = subset.sort_values('Atualizado', ascending=False).head(5)
+            st.dataframe(
+                df_proj[['Nome', 'Status', 'Prioridade', 'Atualizado']],
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Nome": st.column_config.TextColumn("Issue", width="large"),
+                    "Status": st.column_config.TextColumn("Status"),
+                    "Prioridade": st.column_config.TextColumn("Prioridade"),
+                    "Atualizado": st.column_config.TextColumn("Atualizado"),
+                }
+            )
 
 with col_right:
     # === ISSUES FECHADAS RECENTEMENTE ===
