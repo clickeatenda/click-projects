@@ -138,7 +138,7 @@ HEADERS = {
 }
 
 # --- Função para buscar dados no Notion ---
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=60)  # Cache de 1 minuto para dados mais atualizados
 def get_notion_data():
     if USE_MOCK_DATA:
         return pd.DataFrame({
