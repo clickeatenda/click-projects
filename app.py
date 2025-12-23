@@ -279,7 +279,7 @@ with fc1:
 with fc2:
     status_selecionado = st.selectbox(
         "📊 Status",
-        options=["Todos", "Aberto", "Em Andamento", "Concluído"],
+        options=["Todos"] + list(df_original['Status'].unique()),
         index=0
     )
 
@@ -308,12 +308,12 @@ if status_selecionado != "Todos":
 if prioridade_selecionada != "Todos":
     df = df[df['Prioridade'] == prioridade_selecionada]
 
-# === MÉTRICAS ===
+# === MÉTRICAS (usando str.contains para case-insensitive) ===
 total_issues = len(df)
 total_projetos = df['Projeto'].nunique()
-abertos = len(df[df['Status'] == 'Aberto'])
-em_andamento = len(df[df['Status'] == 'Em Andamento'])
-concluidos = len(df[df['Status'] == 'Concluído'])
+abertos = len(df[df['Status'].str.contains('Aberto', case=False, na=False)])
+em_andamento = len(df[df['Status'].str.contains('andamento', case=False, na=False)])
+concluidos = len(df[df['Status'].str.contains('Conclu', case=False, na=False)])
 alta_prio = len(df[df['Prioridade'].str.contains('Alta', case=False, na=False)])
 
 st.markdown('<p class="section-title">📈 Métricas</p>', unsafe_allow_html=True)
@@ -358,12 +358,20 @@ with col_left:
     with g2:
         st.caption("Distribuição por Status")
         status_counts = df['Status'].value_counts()
-        colors = {'Aberto': '#f59e0b', 'Em Andamento': '#0ea5e9', 'Concluído': '#22c55e', 'N/A': '#64748b'}
+        
+        # Mapear cores com case-insensitive
+        def get_status_color(s):
+            s_lower = s.lower()
+            if 'aberto' in s_lower: return '#f59e0b'
+            elif 'andamento' in s_lower: return '#0ea5e9'
+            elif 'conclu' in s_lower: return '#22c55e'
+            else: return '#64748b'
+        
         fig2 = go.Figure(data=[go.Pie(
             labels=status_counts.index,
             values=status_counts.values,
             hole=0.5,
-            marker_colors=[colors.get(s, '#64748b') for s in status_counts.index],
+            marker_colors=[get_status_color(s) for s in status_counts.index],
             textinfo='label+value',
             textfont=dict(color='#f1f5f9', size=10),
         )])
