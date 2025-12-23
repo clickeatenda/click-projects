@@ -455,12 +455,38 @@ with tab_macro:
         color = colors[idx % len(colors)]
         
         with cols[idx % 3]:
-            # Usar botão do Streamlit estilizado como card
-            if st.button(
-                f"📁 {proj}\n{total} issues • {pct}% concluído\n✅ {concl} concluídas • 📋 {pend} pendentes",
-                key=f"btn_{proj}",
-                use_container_width=True
-            ):
+            # Card visual
+            st.markdown(f'''
+            <div class="project-card" style="margin-bottom: 5px;">
+                <div class="header">
+                    <div class="title-section">
+                        <div class="icon-box" style="background: {color}20;">
+                            <span style="color: {color}">📁</span>
+                        </div>
+                        <div>
+                            <div class="name">{proj}</div>
+                            <div class="count">{total} issues</div>
+                        </div>
+                    </div>
+                    <span class="chevron">➤</span>
+                </div>
+                <div class="progress-section">
+                    <div class="progress-label">
+                        <span>Progresso</span>
+                        <span style="font-weight: 600; color: #f1f5f9;">{pct}%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: {pct}%"></div>
+                    </div>
+                </div>
+                <div class="badges">
+                    <span class="badge badge-success">{concl} concluídas</span>
+                    <span class="badge badge-outline">{pend} pendentes</span>
+                </div>
+            </div>
+            ''', unsafe_allow_html=True)
+            # Botão para abrir detalhes
+            if st.button(f"📂 Ver detalhes", key=f"btn_{proj}", use_container_width=True):
                 st.session_state.projeto_selecionado = proj
                 st.rerun()
     
