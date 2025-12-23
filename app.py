@@ -485,10 +485,6 @@ with tab_macro:
                 </div>
             </div>
             ''', unsafe_allow_html=True)
-            # Botão para abrir detalhes
-            if st.button(f"📂 Ver detalhes", key=f"btn_{proj}", use_container_width=True):
-                st.session_state.projeto_selecionado = proj
-                st.rerun()
     
     # Analytics
     st.markdown('<p class="section-title">📊 Analytics</p>', unsafe_allow_html=True)
