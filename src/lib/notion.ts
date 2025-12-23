@@ -1,15 +1,12 @@
-import { Client } from '@notionhq/client';
-import { Project, Issue } from '@/types/project';
-
-// Initialize Notion client
-const notion = new Client({
-    auth: process.env.NOTION_TOKEN,
-});
+// Replace Client import with fetch implementation
+// import { Client } from '@notionhq/client';
+import { Issue } from '@/types/project';
 
 const DATABASE_ID = process.env.DATABASE_ID || '';
+const NOTION_TOKEN = process.env.NOTION_TOKEN || '';
 
 export async function getNotionData(): Promise<Issue[]> {
-    if (!process.env.NOTION_TOKEN || !DATABASE_ID) {
+    if (!NOTION_TOKEN || !DATABASE_ID) {
         console.warn("Notion credentials not found");
         return [];
     }
@@ -19,24 +16,47 @@ export async function getNotionData(): Promise<Issue[]> {
         let hasMore = true;
         let startCursor: string | undefined = undefined;
 
+        console.log(`Notion Fetch: Starting for DB ${DATABASE_ID}`);
+
         while (hasMore) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const response: any = await (notion.databases as any).query({
-                database_id: DATABASE_ID,
-                start_cursor: startCursor,
-                page_size: 100, // Max allowed by Notion API
+            const payload: any = {
+                page_size: 100,
                 sorts: [
                     {
                         property: 'Last edited time',
                         direction: 'descending',
                     },
                 ],
+            };
+
+            if (startCursor) {
+                payload.start_cursor = startCursor;
+            }
+
+            const response = await fetch(`https://api.notion.com/v1/databases/${DATABASE_ID}/query`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${NOTION_TOKEN}`,
+                    'Content-Type': 'application/json',
+                    'Notion-Version': '2022-06-28',
+                },
+                body: JSON.stringify(payload),
+                next: { revalidate: 60 } // Native Next.js cache
             });
 
-            allResults = [...allResults, ...response.results];
-            hasMore = response.has_more;
-            startCursor = response.next_cursor;
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Notion API Error: ${response.status} ${response.statusText} - ${errorText}`);
+            }
+
+            const data = await response.json();
+
+            allResults = [...allResults, ...data.results];
+            hasMore = data.has_more;
+            startCursor = data.next_cursor;
         }
+
+        console.log(`Notion Fetch: Success, ${allResults.length} items found.`);
 
         const issues: Issue[] = allResults.map((page: any) => {
             const props = page.properties;
