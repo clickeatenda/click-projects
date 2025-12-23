@@ -56,7 +56,7 @@ export async function getNotionData(): Promise<Issue[]> {
                 id: page.id,
                 title: name,
                 project,
-                status,
+                status: mapStatus(status),
                 priority: mapPriority(priority),
                 type,
                 tags,
@@ -78,4 +78,12 @@ function mapPriority(p: string): 'Baixa' | 'Média' | 'Alta' | 'Urgente' {
     if (p.includes('Alta')) return 'Alta';
     if (p.includes('Baixa')) return 'Baixa';
     return 'Média';
+}
+
+function mapStatus(s: string): 'Aberto' | 'Em Progresso' | 'Concluído' | 'Bloqueado' {
+    const lower = s.toLowerCase();
+    if (lower.includes('done') || lower.includes('conclu')) return 'Concluído';
+    if (lower.includes('andamento') || lower.includes('progresso')) return 'Em Progresso';
+    if (lower.includes('bloqueado')) return 'Bloqueado';
+    return 'Aberto';
 }

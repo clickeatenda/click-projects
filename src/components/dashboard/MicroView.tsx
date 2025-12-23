@@ -28,13 +28,25 @@ export function MicroView() {
   const safeIssues = issues || [];
 
   // Apply filters
-  const filteredIssues = safeIssues.filter(issue => {
-    if (filterStatus === 'all') return true;
-    return issue.status.toLowerCase().includes(filterStatus.toLowerCase()) ||
-      (filterStatus === 'em-progresso' && (issue.status.toLowerCase().includes('andamento') || issue.status.toLowerCase().includes('progresso')));
-  });
 
-  const projects = getProjectsFromIssues(filteredIssues);
+  const allProjects = getProjectsFromIssues(safeIssues);
+
+  // Filter issues within projects
+  const projects = allProjects.map(project => ({
+    ...project,
+    issues: project.issues.filter(issue => {
+      if (filterStatus === 'all') return true;
+      const statusLower = issue.status.toLowerCase();
+      const filterLower = filterStatus.toLowerCase();
+
+      if (filterStatus === 'aberto') return statusLower === 'aberto';
+      if (filterStatus === 'em-progresso') return statusLower.includes('progresso') || statusLower.includes('andamento');
+      if (filterStatus === 'concluido') return statusLower.includes('conclu') || statusLower.includes('done');
+      if (filterStatus === 'bloqueado') return statusLower.includes('bloqueado');
+
+      return statusLower.includes(filterLower);
+    })
+  }));
 
   return (
     <div className="space-y-6">
@@ -61,8 +73,9 @@ export function MicroView() {
           </Button>
         </div>
 
+
         <p className="text-sm text-muted-foreground">
-          {filteredIssues.length} issues em {projects.length} projetos
+          {projects.reduce((acc, p) => acc + p.issues.length, 0)} issues em {projects.length} projetos
         </p>
       </div>
 
