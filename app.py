@@ -278,7 +278,7 @@ if df_original.empty:
 
 # === FILTROS SUPERIORES ===
 st.markdown('<div class="filter-box">', unsafe_allow_html=True)
-fc1, fc2, fc3, fc4 = st.columns([2, 2, 2, 1])
+fc1, fc2, fc3, fc4 = st.columns([2.5, 2.5, 2.5, 0.5])
 
 with fc1:
     projeto_selecionado = st.selectbox(
@@ -304,7 +304,7 @@ with fc3:
 with fc4:
     st.write("")
     st.write("")
-    if st.button("🔄 Atualizar", use_container_width=True):
+    if st.button("🔄", help="Atualizar dados"):
         st.cache_data.clear()
         st.rerun()
 
