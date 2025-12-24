@@ -36,7 +36,7 @@ export default function Home() {
       <footer className="border-t border-border/50 py-6">
         <div className="container flex items-center justify-between text-sm text-muted-foreground">
           <p>© 2025 Dashboard Executivo</p>
-          <p>Integração Notion + Next.js</p>
+          <p>Integração Notion + Next.js (v1.1)</p>
         </div>
       </footer>
     </div>
