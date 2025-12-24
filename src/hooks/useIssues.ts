@@ -60,5 +60,6 @@ export function getStatsFromIssues(issues: Issue[]): DashboardStats {
         openIssues: issues.filter(i => i.status.toLowerCase().includes('aberto')).length,
         inProgressIssues: issues.filter(i => i.status.toLowerCase().includes('andamento') || i.status.toLowerCase().includes('progresso')).length,
         blockedIssues: issues.filter(i => i.status.toLowerCase().includes('bloquea')).length,
+        urgentIssues: issues.filter(i => i.priority === 'Urgente').length,
     };
 }

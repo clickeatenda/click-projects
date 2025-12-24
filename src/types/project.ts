@@ -31,4 +31,5 @@ export interface DashboardStats {
   openIssues: number;
   inProgressIssues: number;
   blockedIssues: number;
+  urgentIssues: number;
 }
