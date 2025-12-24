@@ -1,19 +1,32 @@
+"use client";
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
   LayoutDashboard, 
   Search, 
-  Bell, 
   Plus,
   Settings
 } from 'lucide-react';
+import { NotificationPanel } from './NotificationPanel';
+import { Issue } from '@/types/project';
+import { useNotifications } from '@/hooks/useNotifications';
 
 interface HeaderProps {
   onViewChange?: (view: 'macro' | 'micro') => void;
   currentView?: 'macro' | 'micro';
+  issues?: Issue[];
 }
 
-export function Header({ onViewChange, currentView = 'macro' }: HeaderProps) {
+export function Header({ onViewChange, currentView = 'macro', issues = [] }: HeaderProps) {
+  const { 
+    notifications, 
+    unreadCount, 
+    notificationsByType, 
+    markAsRead, 
+    markAllAsRead 
+  } = useNotifications(issues);
+
   return (
     <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
       <div className="container flex h-16 items-center justify-between gap-4">
@@ -57,12 +70,13 @@ export function Header({ onViewChange, currentView = 'macro' }: HeaderProps) {
             </Button>
           </div>
 
-          <Button size="icon" variant="ghost" className="relative">
-            <Bell className="h-5 w-5" />
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-              3
-            </span>
-          </Button>
+          <NotificationPanel
+            notifications={notifications}
+            unreadCount={unreadCount}
+            notificationsByType={notificationsByType}
+            onMarkAsRead={markAsRead}
+            onMarkAllAsRead={markAllAsRead}
+          />
 
           <Button size="icon" variant="ghost">
             <Settings className="h-5 w-5" />
