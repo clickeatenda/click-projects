@@ -8,6 +8,7 @@ interface IssueCardProps {
 }
 
 const priorityColors: Record<Priority, string> = {
+  Urgente: 'bg-destructive/30 text-destructive border-destructive/50',
   Alta: 'bg-destructive/20 text-destructive border-destructive/30',
   Média: 'bg-warning/20 text-warning border-warning/30',
   Baixa: 'bg-muted text-muted-foreground border-muted',
